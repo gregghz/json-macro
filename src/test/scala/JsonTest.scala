@@ -10,16 +10,16 @@ class JsonTest extends Specification {
       @JsonRecord
       case class SimpleClass(
         string: String,
-        int: Int
+        int: Option[Int]
       )
 
       val startingJson = Json.obj("string" -> "hello", "int" -> 10)
 
       val result = startingJson.as[SimpleClass]
       result.string mustEqual "hello"
-      result.int mustEqual 10
+      result.int mustEqual Some(10)
 
-      val json = Json.toJson(SimpleClass("hello", 10))
+      val json = Json.toJson(SimpleClass("hello", Some(10)))
       json mustEqual startingJson
     }
 

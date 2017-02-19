@@ -5,8 +5,6 @@ import scala.meta._
 import scala.collection.immutable.Seq
 import scala.collection.mutable
 
-trait ~[A, B]
-
 object JsonRecord {
 
   def generateReads(
@@ -22,7 +20,13 @@ object JsonRecord {
       val tpe = t"${Type.Name(paramTypeStr)}"
       val pat = Pat.Var.Term(Term.Name(param.name.value))
       val key = overrides.getOrElse(param.name.value, param.name.value)
-      enumerator"$pat <- (json \ $key).validate[$tpe]"
+
+      param.decltpe match {
+        case Some(targ"Option[$t]") =>
+          enumerator"$pat <- (json \ $key).validateOpt[${Type.Name(t.toString)}]"
+        case Some(t) =>
+          enumerator"$pat <- (json \ $key).validate[${Type.Name(t.toString)}]"
+      }
     }
 
     val terms = params.map { param => Term.Name(param.name.value) }

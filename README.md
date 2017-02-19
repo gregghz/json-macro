@@ -10,7 +10,7 @@ Add the follow to your build.sbt:
 
     addCompilerPlugin("org.scalameta" % "paradise" % "3.0.0-beta4" cross CrossVersion.full)
 
-    libraryDependencies += "com.gregghz" %% "json-macro" % "0.0.4"
+    libraryDependencies += "com.gregghz" %% "json-macro" % "0.1.0"
 
 ## Usage
 
