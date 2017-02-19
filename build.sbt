@@ -11,3 +11,17 @@ libraryDependencies ++= Seq(
   "org.scalameta" %% "scalameta" % "1.4.0",
   "org.specs2" %% "specs2-core" % "3.8.8" % Test
 )
+
+organization := "com.gregghz"
+
+bintrayOrganization := Some("gregghz")
+
+bintrayPackage := "json-macro"
+
+bintrayRepository := "gregghz"
+
+publishMavenStyle := true
+
+licenses += ("MIT", url("http://opensource.org/licenses/MIT"))
+
+version := "0.0.4"
