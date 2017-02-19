@@ -44,8 +44,6 @@ object JsonRecord {
 
     val jsonObj = q"play.api.libs.json.Json.obj(..$pairs)"
 
-    println(jsonObj)
-
     q"play.api.libs.json.Writes(value => $jsonObj)"
   }
 
@@ -95,8 +93,6 @@ class JsonRecord extends StaticAnnotation {
 
   inline def apply(defn: Any): Any = meta {
     import JsonRecord._
-
-    println(defn)
 
     defn match {
       case orignalCc @ q"..$mods case class $name(..$params) extends ..$template { ..$body  }" =>
