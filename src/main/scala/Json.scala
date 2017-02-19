@@ -3,10 +3,17 @@ package com.gregghz.json
 import scala.annotation.StaticAnnotation
 import scala.meta._
 import scala.collection.immutable.Seq
+import scala.collection.mutable
+
+trait ~[A, B]
 
 object JsonRecord {
 
-  def generateReads(name: Type.Name, params: Seq[Term.Param]) = {
+  def generateReads(
+      name: Type.Name,
+      params: Seq[Term.Param],
+      overrides: Map[String, String]
+  ) = {
 
     val forLines: Seq[Enumerator.Generator] = params.map { param =>
       val paramTypeStr = param.decltpe.map(_.toString).getOrElse {
@@ -14,7 +21,8 @@ object JsonRecord {
       }
       val tpe = t"${Type.Name(paramTypeStr)}"
       val pat = Pat.Var.Term(Term.Name(param.name.value))
-      enumerator"$pat <- (json \ ${param.name.value}).validate[$tpe]"
+      val key = overrides.getOrElse(param.name.value, param.name.value)
+      enumerator"$pat <- (json \ $key).validate[$tpe]"
     }
 
     val terms = params.map { param => Term.Name(param.name.value) }
@@ -23,32 +31,49 @@ object JsonRecord {
     q"play.api.libs.json.Reads(json => for { ..$forLines } yield $tt)"
   }
 
-  def generateWrites(name: Type.Name, params: Seq[Term.Param]) = {
+  def generateWrites(
+      name: Type.Name,
+      params: Seq[Term.Param],
+      overrides: Map[String, String]
+  ) = {
     val pairs = params.map { param =>
       val term = Term.Name(param.name.value)
-      q"${param.name.value} -> value.$term"
+      val key = overrides.getOrElse(param.name.value, param.name.value)
+      q"$key -> value.$term"
     }
 
     val jsonObj = q"play.api.libs.json.Json.obj(..$pairs)"
+
+    println(jsonObj)
 
     q"play.api.libs.json.Writes(value => $jsonObj)"
   }
 
   def modifyClass(
-    mods: Seq[Mod],
-    name: Type.Name,
-    params: Seq[Term.Param],
-    body: Seq[Stat],
-    template: Seq[Ctor.Call],
+    stat: Stat,
     comp: Option[Stat]
   ) = {
+
+    val q"..$mods case class $name(..$rawParams) extends ..$template { ..$body }" = stat
+
+    val (params, overrides) = rawParams.foldLeft((Seq.empty[Term.Param], Map.empty[String, String])) {
+      case ((params, overrides), param"$name: $baseType ~ $jsonName") =>
+        (params :+ param"$name: $baseType", overrides + (name.toString -> jsonName.toString))
+      case ((params, overrides), param) => (params :+ param, overrides)
+    }
+
+    val finalCc = q"..$mods case class $name(..$params) extends ..$template { ..$body  }"
+
     val term = Term.Name(name.value)
     val readsTerm = Pat.Var.Term(Term.Name(s"${name.value}__PlayJsonReads"))
     val writesTerm = Pat.Var.Term(Term.Name(s"${name.value}__PlayJsonWrites"))
 
+    val reads = generateReads(name, params, overrides)
+    val writes = generateWrites(name, params, overrides)
+
     val implicits = Seq(
-      q"implicit val $readsTerm: play.api.libs.json.Reads[$name] = ${generateReads(name, params)}",
-      q"implicit val $writesTerm: play.api.libs.json.Writes[$name] = ${generateWrites(name, params)}"
+      q"implicit val $readsTerm: play.api.libs.json.Reads[$name] = $reads",
+      q"implicit val $writesTerm: play.api.libs.json.Writes[$name] = $writes"
     )
 
     val finalComp = comp.map {
@@ -60,7 +85,7 @@ object JsonRecord {
     }.getOrElse(q"object $term { ..$implicits }")
 
     q"""
-      ..$mods case class $name(..$params) extends ..$template { .. $body  }
+      $finalCc
       $finalComp
     """
   }
@@ -70,14 +95,18 @@ class JsonRecord extends StaticAnnotation {
 
   inline def apply(defn: Any): Any = meta {
     import JsonRecord._
+
+    println(defn)
+
     defn match {
-      case q"""..$mods case class $name(..$params) extends ..$template { ..$body  }""" =>
-        modifyClass(mods, name, params, body, template, None)
+      case orignalCc @ q"..$mods case class $name(..$params) extends ..$template { ..$body  }" =>
+        modifyClass(orignalCc, None)
       case q"""
         ..$mods case class $cname(..$cparams) extends ..$template { ..$cbody  }
         $comp
       """ =>
-        modifyClass(mods, cname, cparams, cbody, template, Some(comp))
+        val originalCc = q"..$mods case class $cname(..$cparams) extends ..$template { ..$cbody }"
+        modifyClass(originalCc, Some(comp))
       case _ =>
         abort("@JsonRecord must be used with a case class")
     }

@@ -41,5 +41,22 @@ class JsonTest extends Specification {
 
       SimpleClass.f() mustEqual "hello"
     }
+
+    "override field names" in {
+      @JsonRecord
+      case class SimpleClass(
+        string: String ~ str,
+        int: Int ~ `complex-value_123!!!`
+      )
+
+      val startingJson = Json.obj("str" -> "hello", "complex-value_123!!!" -> 10)
+
+      val result = startingJson.as[SimpleClass]
+      result.string mustEqual "hello"
+      result.int mustEqual 10
+
+      val json = Json.toJson(SimpleClass("hello", 10))
+      json mustEqual startingJson
+    }
   }
 }
