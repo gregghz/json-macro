@@ -7,7 +7,7 @@ scalacOptions in (Compile, console) := Seq()
 sources in (Compile, doc) := Nil
 
 libraryDependencies ++= Seq(
-  "com.typesafe.play" %% "play-json" % "2.6.0-M1",
+  "com.typesafe.play" %% "play-json" % "2.6.0-M1" % Test,
   "org.scalameta" %% "scalameta" % "1.4.0",
   "org.specs2" %% "specs2-core" % "3.8.8" % Test
 )

@@ -2,6 +2,8 @@
 
 json-macro is an attempt at a scalameta macro for play-json that avoids the overhead of play-json's functional syntax. See [this blog post](https://www.lucidchart.com/techblog/2016/08/29/speeding-up-restful-services-in-play-framework/) for details.
 
+Compatibility is currently tested against play-json 2.6.0-M1. That means it is compatible with play-json 2.5.x as well but that is mostly incidental. Once 2.6.x becomes final I plan to support the latest stable release of play-json moving forward. Any version that has the same Reads/Writes API should automatically be supported by json-macro.
+
 ## Install
 
 Add the follow to your build.sbt:

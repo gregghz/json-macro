@@ -1,9 +1,9 @@
 package com.gregghz.json
 
 import scala.annotation.StaticAnnotation
-import scala.meta._
 import scala.collection.immutable.Seq
 import scala.collection.mutable
+import scala.meta._
 
 object JsonRecord {
 
